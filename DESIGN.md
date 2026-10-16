@@ -1,28 +1,32 @@
-# Design and validation notes
+# Spatial portfolio — implementation and validation
 
-## Reference study
+## Design correction
 
-Inspected https://hancore.dev/ in the browser: sparse identity/navigation, small monospaced code, line-number gutter, restrained syntax colors, Vim mode/status strip, dark negative space, keyboard/hand-tracking concept, and the colorscheme chooser. The reference uses a much larger theme catalog; this portfolio implements the four requested original schemes. The implementation follows the supplied warm palette and composition rather than copying branding, artwork, text or code. No pixel-perfect equivalence or exhaustive reproduction of reference interactions is claimed.
+The first version centered an editor and treated projects as text buffers. This revision replaces that composition with a two-scene application: a minimal typing introduction and an asymmetric interactive project workspace. Reference observations were recorded before implementation in REFERENCE-STUDY.md.
 
-## Original implementation
+The explorer contains a narrow moving rail of tilted original technical previews; an irregular filament field; a central project-specific terminal; right-side technical studies and fine connectors; a fixed system status strip; and a smaller integrated keyboard, hands and mouse indicator. Copilot and CUDA projects prioritize source excerpts; routing, vision, robotics and inspection prioritize their technical diagrams. No reference code or assets were reused.
 
-A deterministic state machine types one character at a time, pauses at line boundaries and between files, and transitions through typing, hold and switch states. The same character selects a physical key and finger. Two SVG hands each contain 21 interpolated landmarks, connected finger bones, palm geometry, tracking bounds and metadata. Rendering uses requestAnimationFrame with visibility cleanup. Static reduced-motion and manual pause modes are available.
+## Interaction engineering
 
-Content lives in editor buffers, including an explorable six-file project index. All professional project descriptions are high-level owner-supplied summaries. Code sequences are original illustrative fragments, not employer source. Theme variables cover text, syntax, surfaces, keys, landmarks and status bars. Fonts are local bundled assets.
+A pure reducer owns scene, project, direction, transition progress, input modality, command context and motion activity. Scene transitions use one requestAnimationFrame progress loop. Wheel gestures use an accumulated-distance threshold, a cooldown and a momentum gate. Selection clamps to six projects. Pointer capture begins only after drag intent so clicks remain reliable. Keyboard selection moves focus to the active rail object, allowing Enter to open the correct project. Contextual modal buffers retain focus and preserve the active project.
 
-## Verification on 2026-10-16
+The existing character-to-key typing engine is retained. Typing and navigation events drive the same SVG hand landmarks. The navigation device reports actual input modality. The pause control disables CSS animations and scene choreography while keeping panels visible and navigable. OS prefers-reduced-motion is also honored. Visibility listeners stop animation loops while hidden.
 
-- Production build: TypeScript plus Vite passed.
-- Three deterministic engine tests passed: character-to-key mapping, mode/file transitions, and punctuation/finger coverage.
-- Browser: profile, education, projects, GPU project selection, experience, skills and contact buffers inspected.
-- Commands: colon opens input; Enter executes; Escape returns home; unknown commands display an error.
-- Theme: Light Paper selection applied to the whole interface and persisted after reload; Warm Terminal restored.
-- Responsive: 390 x 844 mobile showed no horizontal overflow. 1280 x 720, 1440 x 900 and 1920 x 1080 desktop layouts fit the viewport after refinement.
-- Preview HTML and CV endpoints returned HTTP 200. Downloadable CV SHA256 matches the supplied original.
-- Browser console had no warning/error entries at the checked point.
-- Source scan found no credential patterns; node_modules, dist, .env and .env.production are ignored.
-- Reduced-motion and hidden-tab lifecycle support were reviewed in source; OS-level reduced-motion behavior was not separately emulated.
+## Verification
 
-## GitHub blocker
+- Final production TypeScript/Vite build passed after source formatting.
+- Eight deterministic tests passed: typing/key mapping, timing/file transitions, finger coverage, scene choreography, bounded rapid navigation, command/Enter isolation, context restoration and intro command transitions.
+- Browser: Enter from introduction; wheel forward/back; direct thumbnail click; arrows and j/k; Enter into details; Escape out of details; contextual about and experience commands; persistent theme after refresh.
+- Browser: mobile horizontal rail drag moved selection correctly. Mobile 390 x 844 had page dimensions 390 x 844 without horizontal overflow.
+- Browser: paused motion still allowed navigation and theme buffers; Light Paper updated the rail, code, diagrams, footer and hand visualization.
+- A browser-found click/drag pointer-capture conflict and stale thumbnail focus on keyboard Enter were repaired and retested.
+- Modal content and project notes preserve the owner's education, experience, achievements, contact links and original project summaries. The original downloadable CV is retained.
+- Source formatter applied for readable maintainable modules; no formatter was added as a runtime dependency.
 
-`gh auth status` could not run because GitHub CLI is not installed or available on PATH. No repository was created, no origin was assigned, and nothing was pushed. Install GitHub CLI and authenticate as personal account `younestr`, then verify account type and repository nonexistence before creating the public repository. Never create it under an organization.
+OS-level reduced-motion emulation is not exposed by the connected browser controls. The equivalent manual static path was tested, and the media-query hooks and CSS fallback were reviewed. Exact reference easing, gesture thresholds and implementation internals remain unverified; these are original decisions. Reference screenshots were compared visually, without a claim of pixel-perfect equivalence.
+
+## Repository
+
+The existing main branch and Git repository are used. There were no unrelated working-tree changes at the start. No origin remote is configured and GitHub CLI remains unavailable on PATH. No repository will be created or remote guessed during this correction; pushing requires an existing verified personal remote.
+
+Final production preview: the built app loaded and entered the explorer with no browser warning/error entries. Additional viewport checks returned matching page/viewport dimensions at 320 x 844, 1440 x 900 and 1920 x 1080. All six projects were reached; navigation clamped at the final project. Desktop and mobile thumbnail selection and mobile rail dragging were retested.

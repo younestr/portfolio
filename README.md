@@ -1,6 +1,6 @@
 # Younes Traouki — intelligence, engineered.
 
-A personal engineering portfolio presented as a living editor. Built with React, TypeScript, Vite and original SVG hand landmarks. No backend or external API is required.
+A spatial engineering portfolio built with React, TypeScript, Vite and original SVG technical studies. Enter a living code introduction, then navigate a finite rail of six engineering projects in an asymmetric terminal workspace.
 
 ## Run locally
 
@@ -11,44 +11,55 @@ npm install
 npm run dev
 ```
 
-Open the Local URL printed by Vite (normally http://127.0.0.1:5173).
+Open the Local URL printed by Vite, normally http://127.0.0.1:5173. Vite selects another port if it is occupied.
 
 ```sh
-npm test          # deterministic typing / key synchronization tests
-npm run build     # TypeScript checks and production output in dist/
-npm run preview   # serve the production build locally
+npm test          # typing, physical key mapping and navigation-state tests
+npm run build     # TypeScript checks and Vite production output in dist/
+npm run preview   # serve the production output locally
 ```
 
-## Explore
+## Navigation
 
-Click the command hints, or press `:` and type a command followed by Enter. Escape returns home or closes the command input.
+| Input                      | Action                                                             |
+| -------------------------- | ------------------------------------------------------------------ |
+| Enter / visible enter hint | Transition from introduction to explorer                           |
+| Wheel, Up / Down, j / k    | Select previous / next project                                     |
+| Click thumbnail            | Select a project directly                                          |
+| Drag rail                  | Navigate vertically on desktop, horizontally on mobile             |
+| Enter / open project notes | Open detailed contribution, challenge, stack and illustrative code |
+| Escape                     | Close command/buffer, return from details, or leave explorer       |
+| :                          | Open contextual command palette                                    |
+| ?                          | Open interaction guide                                             |
 
 Commands: `about`, `projects`, `experience`, `skills`, `contact`, `resume`, `theme`, `help`, `home`.
 
-Four persistent themes: Warm Terminal, Green Phosphor, Light Paper and Quiet Slate. Use “pause motion” for a static view. Reduced-motion preferences are respected, and animation loops stop when the document is hidden. Portfolio buffers pause typing for comfortable reading.
+Wheel gestures use a distance threshold, cooldown and momentum gate. The rail has six real projects and clamps at its ends. Keyboard navigation moves focus to the selected thumbnail. Dialogs retain keyboard focus and preserve project context.
 
-## Content and architecture
+## Motion and themes
 
-- `src/content.ts`: personal information, optional domain/social links, six project summaries, experience, education, themes and five original illustrative snippets.
-- `src/engine.mjs`: pure typing state machine and physical key/finger mapping.
-- `src/TypingEngine.ts`: React animation lifecycle, visibility and reduced-motion handling.
-- `src/KeyboardVisualizer.tsx`: original keyboard geometry and two 21-landmark hands. Each typed character drives a physical key and interpolated finger target.
-- `src/App.tsx`: editor shell, syntax rendering, commands and content buffers.
-- `src/style.css`: responsive layout and complete theme tokens.
-- `public/Younes-Traouki-CV.pdf`: user-supplied downloadable résumé.
+The reducer owns INTRO, ENTERING, EXPLORER, PROJECT_TRANSITION, PROJECT_DETAIL, COMMAND, BUFFER and LEAVING states, active project, transition progress, direction and input modality. A separate typing state machine emits the actual physical key used by the hand visualizer. Navigation j/k events drive those same hands.
 
-Set `profile.domain` only after obtaining a real domain. GitHub, LinkedIn and Kaggle URLs are verified from embedded CV links; blank optional links are hidden. The GitHub profile was also supplied by the owner; project repository URLs are intentionally omitted where unknown.
+The OS reduced-motion preference disables typing/scene animation and supplies static content. The pause-motion control also disables transition choreography without blocking navigation. Animation loops stop on hidden tabs. Four themes cover every interface region and persist locally: Warm Terminal, Green Phosphor, Light Paper and Quiet Slate. No backend is required.
 
-## Public content
+## Edit content
 
-All displayed code snippets are original illustrative examples, not employer code. Professional projects contain only high-level descriptions supplied by the owner. No private source, credentials, customer data or invented metrics are included. The supplied CV includes contact details and is intentionally downloadable; review it before any future public deployment.
+- `src/content.ts`: identity, contact URLs, project descriptions, experience, education, themes and intro snippets.
+- `src/projectScenes.ts`: project-specific commands, illustrative code, technical labels and captions.
+- `src/navigation.mjs`: pure application reducer.
+- `src/ProjectRail.tsx`: finite tilted-object rail, original signal field and pointer gestures.
+- `src/ProjectVisual.tsx`: original routing, video tracking, retrieval, tiled GEMM, robotics and inspection studies.
+- `src/ContentBuffer.tsx`: personal content, theme picker and interaction guide.
+- `src/TypingEngine.ts`, `src/engine.mjs`, `src/KeyboardVisualizer.tsx`: synchronized typing and landmark rendering.
+- `src/App.tsx`: scene orchestration, input handling, explorer composition and modal buffers.
+- `src/style.css`: spatial layout, choreography, responsive behavior and theme variables.
 
-## Design reference
+The proposed domain remains unconfigured; the safe identity label is used instead. GitHub, LinkedIn and Kaggle links are verified from the supplied CV. Optional social links disappear when blank. The original supplied PDF is downloadable from `public/Younes-Traouki-CV.pdf`.
 
-Inspired by the restrained terminal/editor composition of https://hancore.dev/. Branding, text, implementation and SVG geometry are original. IBM Plex Mono is bundled through Fontsource, so the site does not request Google Fonts.
+## Content and deployment
 
-## Publishing
+Professional project descriptions are high-level owner-provided overviews. All code and technical diagrams are original illustrations, not employer source or actual screenshots. No private architecture, customer data, invented performance metrics or fabricated repository links are included. The CV intentionally contains the owner's contact information.
 
-The application uses relative asset paths and can be hosted from `dist/`, including under a repository subpath. GitHub repository creation does not itself deploy a website.
+Inspired by the interaction and composition of https://hancore.dev/, with original identity, code, assets and content. Fonts are bundled locally through Fontsource. See `REFERENCE-STUDY.md` for confirmed observations and `DESIGN.md` for validation and limitations.
 
-The requested repository is `younestr/younes-portfolio`, public, with `main` as its default branch. GitHub CLI must be installed and authenticated to the personal `younestr` account before repository creation or pushing. Do not create under an organization or overwrite an existing repository.
+The production output uses relative asset paths and supports hosting below a repository subpath. Repository creation does not deploy the website. The existing local branch is `main`; a personal GitHub remote must be verified before pushing. Never push to an organization or force-push.
