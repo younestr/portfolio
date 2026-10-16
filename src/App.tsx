@@ -8,6 +8,8 @@ import KeyboardVisualizer from "./KeyboardVisualizer";
 import ContentBuffer from "./ContentBuffer";
 import ProjectRail from "./ProjectRail";
 import ProjectVisual from "./ProjectVisual";
+import CinematicPortalTransition from "./CinematicPortalTransition";
+import { portalTimeline } from "./portal.mjs";
 
 function Highlight({ text }: { text: string }) {
   const tokens = text.split(
@@ -73,6 +75,7 @@ export default function App() {
   const panel = useRef<HTMLDivElement>(null);
   const workspace = useRef<HTMLElement>(null);
   const wheel = useRef({ sum: 0, last: 0, lastStep: 0, locked: false });
+  const portalActive = ["ENTERING", "LEAVING"].includes(state.scene);
   const isOverlay = ["COMMAND", "BUFFER"].includes(state.scene);
   const baseScene = isOverlay ? state.returnScene : state.scene;
   const explorer = !["INTRO", "ENTERING", "LEAVING"].includes(baseScene);
@@ -127,15 +130,14 @@ export default function App() {
     };
   }, []);
   useEffect(() => {
-    if (!["ENTERING", "LEAVING", "PROJECT_TRANSITION"].includes(state.scene))
-      return;
+    if (state.scene !== "PROJECT_TRANSITION") return;
     if (reduced || state.paused) {
       dispatch({ type: "PROGRESS", value: 1 });
       return;
     }
     let frame = 0;
     let start = 0;
-    const duration = state.scene === "PROJECT_TRANSITION" ? 480 : 1000;
+    const duration = 480;
     const tick = (now: number) => {
       if (!start) start = now;
       const value = Math.min(1, (now - start) / duration);
@@ -155,6 +157,23 @@ export default function App() {
   useEffect(() => {
     const keydown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
+      if (portalActive) {
+        if (
+          [
+            "Enter",
+            "Escape",
+            "ArrowDown",
+            "ArrowUp",
+            "j",
+            "k",
+            ":",
+            "?",
+            "Tab",
+          ].includes(e.key)
+        )
+          e.preventDefault();
+        return;
+      }
       if (target.closest("input,textarea,select,[contenteditable=true]")) {
         if (e.key === "Escape") {
           e.preventDefault();
@@ -235,14 +254,15 @@ export default function App() {
     if (code) code.scrollTop = code.scrollHeight;
   }, [typing.count]);
   const pressed = isOverlay ? "" : explorer ? state.key : typing.key;
-  const transition =
-    state.scene === "ENTERING"
-      ? state.progress
-      : state.scene === "LEAVING"
-        ? 1 - state.progress
-        : explorer
-          ? 1
-          : 0;
+  const transition = portalActive
+    ? portalTimeline(
+        state.progress,
+        state.scene === "LEAVING",
+        reduced || state.paused,
+      ).entry
+    : explorer
+      ? 1
+      : 0;
   const style = {
     "--entry": transition,
     "--direction": state.direction,
@@ -250,14 +270,16 @@ export default function App() {
   return (
     <main
       ref={workspace}
-      className={`app scene-${state.scene.toLowerCase()} ${explorer ? "exploring" : ""} ${state.paused || reduced || !visible ? "motion-paused" : ""}`}
+      className={`app scene-${state.scene.toLowerCase()} ${explorer ? "exploring" : ""} ${portalActive ? "portal-active" : ""} ${portalActive && (reduced || state.paused) ? "portal-reduced" : ""} ${state.paused || reduced || !visible ? "motion-paused" : ""}`}
       style={style}
+      tabIndex={-1}
+      aria-busy={portalActive}
       data-scene={state.scene}
       data-project={state.project}
     >
       <header
         className="topbar"
-        inert={isOverlay || state.scene === "PROJECT_DETAIL"}
+        inert={portalActive || isOverlay || state.scene === "PROJECT_DETAIL"}
       >
         <a
           href="#"
@@ -403,7 +425,9 @@ export default function App() {
       <div className="input-deck">
         <KeyboardVisualizer
           pressed={pressed}
-          reduced={reduced || state.paused || isOverlay || !visible}
+          reduced={
+            reduced || state.paused || isOverlay || !visible || portalActive
+          }
         />
         <div className="input-device">
           <svg viewBox="0 0 60 95" aria-hidden="true">
@@ -425,7 +449,7 @@ export default function App() {
       </div>
       <footer
         className="system-footer"
-        inert={isOverlay || state.scene === "PROJECT_DETAIL"}
+        inert={portalActive || isOverlay || state.scene === "PROJECT_DETAIL"}
       >
         <div className="footer-identity">
           <strong>YOUNES / TRAOUKI</strong>
@@ -631,6 +655,15 @@ export default function App() {
             </p>
           )}
         </div>
+      )}
+      {portalActive && (
+        <CinematicPortalTransition
+          key={state.scene}
+          reverse={state.scene === "LEAVING"}
+          reduced={reduced || state.paused}
+          host={workspace}
+          onProgress={(value) => dispatch({ type: "PROGRESS", value })}
+        />
       )}
       <span className="sr-only" role="status">
         {explorer

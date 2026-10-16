@@ -16,6 +16,12 @@ export const initialState = {
 const stable = (scene) =>
   ["EXPLORER", "PROJECT_DETAIL"].includes(scene) ? scene : "INTRO";
 export function navigationReducer(state, action) {
+  // Portal travel is atomic: keyboard, pointer and commands cannot redirect it.
+  if (
+    ["ENTERING", "LEAVING"].includes(state.scene) &&
+    !["PROGRESS", "PAUSE"].includes(action.type)
+  )
+    return state;
   switch (action.type) {
     case "ENTER":
       if (state.scene === "INTRO")

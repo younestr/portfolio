@@ -1669,4 +1669,60 @@ kbd {
   }
 }
 
-.signal-field{top:12px;height:calc(100% - 30px)}
+.signal-field {
+  top: 12px;
+  height: calc(100% - 30px);
+}
+
+/* Portal-only compositing. Stable intro/explorer layout rules are untouched. */
+.cinematic-portal {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100svh;
+  z-index: 100;
+  pointer-events: auto;
+  touch-action: none;
+  contain: strict;
+}
+.cinematic-portal.reduced-portal {
+  visibility: hidden;
+}
+.portal-active .topbar,
+.portal-active .system-footer,
+.portal-active .input-deck {
+  opacity: var(--portal-chrome, 1);
+}
+.portal-active .intro-scene {
+  transform: translateX(-50%) translateY(calc(var(--entry) * -70px))
+    scale(calc(1 - var(--portal-recede, 0) * 0.045 - var(--entry) * 0.08));
+}
+.portal-active .explorer-scene {
+  will-change: transform, opacity;
+}
+.portal-reduced .intro-scene,
+.portal-fallback .intro-scene {
+  opacity: calc(1 - var(--entry));
+  transform: translateX(-50%);
+  filter: none;
+}
+.portal-reduced .explorer-scene,
+.portal-fallback .explorer-scene {
+  opacity: var(--entry);
+  transform: none;
+}
+.portal-active:focus {
+  outline: none;
+}
+
+.portal-active .project-visual *,
+.portal-active .cursor {
+  animation-play-state: paused !important;
+}
+.portal-active .vehicle {
+  visibility: hidden;
+}
+
+.app:focus {
+  outline: none;
+}
