@@ -113,7 +113,7 @@ function Hand({
         {side === 0 ? "L" : "R"}_HAND / 21 landmarks
       </text>
       <text x={side === 0 ? 78 : 358} y="302">
-        {side === 0 ? "00" : "01"} Â· synthetic tracking
+        {side === 0 ? "00" : "01"} · synthetic tracking
       </text>
     </g>
   );

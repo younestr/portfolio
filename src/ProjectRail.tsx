@@ -1,6 +1,8 @@
 import { useRef } from "react";
-import { projects } from "./content";
-import { projectScenes } from "./projectScenes";
+import {
+  projectRegistry as projects,
+  registryScenes as projectScenes,
+} from "./system/projects";
 import ProjectVisual from "./ProjectVisual";
 type Props = {
   active: number;

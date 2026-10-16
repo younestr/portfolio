@@ -1,8 +1,18 @@
 import { useEffect, useReducer, useRef, useState } from "react";
 import type { CSSProperties } from "react";
-import { commands, profile, projects, snippets, themes } from "./content";
+import { commands, profile, snippets, themes } from "./content";
 import { initialState, navigationReducer } from "./navigation.mjs";
-import { projectScenes } from "./projectScenes";
+import {
+  projectRegistry as projects,
+  registryScenes as projectScenes,
+} from "./system/projects";
+import YTEnvironment, {
+  isSystemCommand,
+  systemColonCommands,
+} from "./system/YTEnvironment";
+import type { EnvironmentHandle } from "./system/YTEnvironment";
+import { useMotionPreference } from "./system/useMotionPreference";
+import "./system/system.css";
 import { useTyping } from "./TypingEngine";
 import KeyboardVisualizer from "./KeyboardVisualizer";
 import ContentBuffer from "./ContentBuffer";
@@ -65,9 +75,13 @@ export default function App() {
       return "warm";
     }
   });
-  const [reduced, setReduced] = useState(
-    () => matchMedia("(prefers-reduced-motion: reduce)").matches,
-  );
+  const { motion, preference, setPreference } = useMotionPreference();
+  const reduced = motion !== "full";
+  const [systemOpen, setSystemOpen] = useState(false);
+  const [zen, setZen] = useState(false);
+  const environment = useRef<EnvironmentHandle>(null);
+  const pendingDetail = useRef<number | null>(null);
+  const allCommands = [...commands, ...systemColonCommands];
   const [visible, setVisible] = useState(!document.hidden);
   const input = useRef<HTMLInputElement>(null);
   const introCode = useRef<HTMLDivElement>(null);
@@ -80,7 +94,7 @@ export default function App() {
   const baseScene = isOverlay ? state.returnScene : state.scene;
   const explorer = !["INTRO", "ENTERING", "LEAVING"].includes(baseScene);
   const typing = useTyping(
-    state.paused || baseScene !== "INTRO" || isOverlay || reduced,
+    state.paused || baseScene !== "INTRO" || isOverlay || reduced || systemOpen,
   );
   const snippet = snippets[typing.file];
   const project = projects[state.project];
@@ -94,6 +108,11 @@ export default function App() {
   };
   const back = () => dispatch({ type: "BACK" });
   const execute = (raw: string) => {
+    if (isSystemCommand(raw)) {
+      if (isOverlay) dispatch({ type: "CLOSE_COMMAND" });
+      environment.current?.executeColon(raw);
+      return;
+    }
     const command = raw.trim().replace(/^:/, "").toLowerCase();
     if (!commands.includes(command as (typeof commands)[number])) {
       dispatch({
@@ -119,13 +138,9 @@ export default function App() {
     } catch {}
   }, [theme]);
   useEffect(() => {
-    const media = matchMedia("(prefers-reduced-motion: reduce)");
-    const change = () => setReduced(media.matches);
     const visibility = () => setVisible(!document.hidden);
-    media.addEventListener("change", change);
     document.addEventListener("visibilitychange", visibility);
     return () => {
-      media.removeEventListener("change", change);
       document.removeEventListener("visibilitychange", visibility);
     };
   }, []);
@@ -174,6 +189,7 @@ export default function App() {
           e.preventDefault();
         return;
       }
+      if (environment.current?.handleKey(e) || systemOpen) return;
       if (target.closest("input,textarea,select,[contenteditable=true]")) {
         if (e.key === "Escape") {
           e.preventDefault();
@@ -216,7 +232,8 @@ export default function App() {
     const onWheel = (event: WheelEvent) => {
       if (
         !["EXPLORER", "PROJECT_TRANSITION"].includes(state.scene) ||
-        event.ctrlKey
+        event.ctrlKey ||
+        systemOpen
       )
         return;
       event.preventDefault();
@@ -242,7 +259,7 @@ export default function App() {
     };
     element.addEventListener("wheel", onWheel, { passive: false });
     return () => element.removeEventListener("wheel", onWheel);
-  }, [state.scene]);
+  }, [state.scene, systemOpen]);
   useEffect(() => {
     if (state.scene === "PROJECT_TRANSITION" && state.modality === "keyboard")
       document
@@ -253,7 +270,27 @@ export default function App() {
     const code = introCode.current?.querySelector(".code-buffer");
     if (code) code.scrollTop = code.scrollHeight;
   }, [typing.count]);
-  const pressed = isOverlay ? "" : explorer ? state.key : typing.key;
+  useEffect(() => {
+    dispatch({ type: "SET_PAUSED", value: motion === "off" });
+  }, [motion]);
+  useEffect(() => {
+    if (state.scene === "EXPLORER" && pendingDetail.current === state.project) {
+      pendingDetail.current = null;
+      dispatch({ type: "ENTER" });
+    }
+  }, [state.scene, state.project]);
+  const revealProject = (index: number, detail: boolean) => {
+    pendingDetail.current = detail ? index : null;
+    dispatch({ type: "REVEAL_PROJECT", index, total: projects.length });
+  };
+  const openSystem = (
+    panel: "terminal" | "palette" | "diagnostics" | "simulation",
+  ) => {
+    if (isOverlay) dispatch({ type: "CLOSE_COMMAND" });
+    environment.current?.open(panel);
+  };
+  const pressed =
+    isOverlay || systemOpen ? "" : explorer ? state.key : typing.key;
   const transition = portalActive
     ? portalTimeline(
         state.progress,
@@ -270,7 +307,7 @@ export default function App() {
   return (
     <main
       ref={workspace}
-      className={`app scene-${state.scene.toLowerCase()} ${explorer ? "exploring" : ""} ${portalActive ? "portal-active" : ""} ${portalActive && (reduced || state.paused) ? "portal-reduced" : ""} ${state.paused || reduced || !visible ? "motion-paused" : ""}`}
+      className={`app scene-${state.scene.toLowerCase()} ${explorer ? "exploring" : ""} ${portalActive ? "portal-active" : ""} ${portalActive && (reduced || state.paused) ? "portal-reduced" : ""} ${state.paused || reduced || !visible ? "motion-paused" : ""} ${zen ? "yt-zen" : ""}`}
       style={style}
       tabIndex={-1}
       aria-busy={portalActive}
@@ -279,7 +316,12 @@ export default function App() {
     >
       <header
         className="topbar"
-        inert={portalActive || isOverlay || state.scene === "PROJECT_DETAIL"}
+        inert={
+          systemOpen ||
+          portalActive ||
+          isOverlay ||
+          state.scene === "PROJECT_DETAIL"
+        }
       >
         <a
           href="#"
@@ -294,6 +336,20 @@ export default function App() {
           <span>younes / traouki</span>
         </a>
         <nav aria-label="Personal links">
+          <button
+            className="yt-launch"
+            aria-label="Open terminal"
+            onClick={() => openSystem("terminal")}
+          >
+            ~
+          </button>
+          <button
+            className="yt-launch"
+            aria-label="Open command palette"
+            onClick={() => openSystem("palette")}
+          >
+            ⌘K
+          </button>
           <button onClick={() => execute("about")}>whoami</button>
           <a href={profile.github} target="_blank" rel="noreferrer">
             github ↗
@@ -303,7 +359,7 @@ export default function App() {
       <div
         className="intro-scene"
         aria-hidden={baseScene !== "INTRO"}
-        inert={baseScene !== "INTRO" || isOverlay}
+        inert={systemOpen || baseScene !== "INTRO" || isOverlay}
       >
         <div className="intro-code" ref={introCode}>
           <div className="buffer-heading">// {snippet.path}</div>
@@ -336,7 +392,12 @@ export default function App() {
         className="explorer-scene"
         aria-label="Spatial project explorer"
         aria-hidden={!explorer}
-        inert={!explorer || isOverlay || state.scene === "PROJECT_DETAIL"}
+        inert={
+          systemOpen ||
+          !explorer ||
+          isOverlay ||
+          state.scene === "PROJECT_DETAIL"
+        }
       >
         <ProjectRail
           active={state.project}
@@ -392,6 +453,9 @@ export default function App() {
               <Code text={scene.code} />
             </div>
             <div className="project-actions">
+              <button onClick={() => openSystem("simulation")}>
+                ↳ launch simulation
+              </button>
               <button onClick={open}>open project notes ↩</button>
               <small>{project.status}</small>
             </div>
@@ -426,7 +490,12 @@ export default function App() {
         <KeyboardVisualizer
           pressed={pressed}
           reduced={
-            reduced || state.paused || isOverlay || !visible || portalActive
+            reduced ||
+            state.paused ||
+            isOverlay ||
+            !visible ||
+            portalActive ||
+            systemOpen
           }
         />
         <div className="input-device">
@@ -449,7 +518,12 @@ export default function App() {
       </div>
       <footer
         className="system-footer"
-        inert={portalActive || isOverlay || state.scene === "PROJECT_DETAIL"}
+        inert={
+          systemOpen ||
+          portalActive ||
+          isOverlay ||
+          state.scene === "PROJECT_DETAIL"
+        }
       >
         <div className="footer-identity">
           <strong>YOUNES / TRAOUKI</strong>
@@ -498,11 +572,17 @@ export default function App() {
           <span>{state.modality}</span>
         </div>
         <div className="footer-actions">
+          <button
+            onClick={() => openSystem("diagnostics")}
+            aria-label="Open runtime diagnostics"
+          >
+            status
+          </button>
           <button onClick={() => execute("theme")}>
             :theme <i />
           </button>
           <button
-            onClick={() => dispatch({ type: "PAUSE" })}
+            onClick={() => setPreference(preference === "off" ? "full" : "off")}
             aria-pressed={state.paused}
           >
             {state.paused ? "resume motion" : "pause motion"}
@@ -641,7 +721,7 @@ export default function App() {
             </button>
           </form>
           <div className="command-suggestions">
-            {commands
+            {allCommands
               .filter((c) => c.startsWith(state.query.replace(/^:/, "")))
               .map((c) => (
                 <button key={c} onClick={() => execute(c)}>
@@ -656,11 +736,27 @@ export default function App() {
           )}
         </div>
       )}
+      <YTEnvironment
+        ref={environment}
+        scene={state.scene}
+        project={state.project}
+        theme={theme}
+        motion={motion}
+        preference={preference}
+        onMotion={setPreference}
+        onTheme={setTheme}
+        onPage={execute}
+        onReveal={revealProject}
+        onHome={() => dispatch({ type: "HOME" })}
+        onBlockingChange={setSystemOpen}
+        onZen={() => setZen((value) => !value)}
+      />
       {portalActive && (
         <CinematicPortalTransition
           key={state.scene}
           reverse={state.scene === "LEAVING"}
           reduced={reduced || state.paused}
+          disabled={motion === "off"}
           host={workspace}
           onProgress={(value) => dispatch({ type: "PROGRESS", value })}
         />

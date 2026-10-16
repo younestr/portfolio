@@ -30,3 +30,16 @@ OS-level reduced-motion emulation is not exposed by the connected browser contro
 The existing main branch and Git repository are used. There were no unrelated working-tree changes at the start. No origin remote is configured and GitHub CLI remains unavailable on PATH. No repository will be created or remote guessed during this correction; pushing requires an existing verified personal remote.
 
 Final production preview: the built app loaded and entered the explorer with no browser warning/error entries. Additional viewport checks returned matching page/viewport dimensions at 320 x 844, 1440 x 900 and 1920 x 1080. All six projects were reached; navigation clamped at the final project. Desktop and mobile thumbnail selection and mobile rail dragging were retested.
+
+
+## YT.OS validation — 16 October 2026
+
+Added a derived shared project registry, action launcher, bounded browser-local shell, virtual filesystem, first-visit/replayable boot, runtime diagnostics and six lazy-loaded interactive labs. Original intro, spatial selection, project notes and cinematic portal remain intact. New code lives in `src/system` and `src/playgrounds`; the domain modules are independent of React.
+
+Validation: 22 Node tests pass, including existing typing/navigation/portal regressions and new registry, shell, routing, matrix, vehicle, inspection, synthetic vision, agent citation and shared-navigation checks. TypeScript and Vite production build pass. Production output splits every playground into its own chunk.
+
+Browser checks covered all six lab launches and controls, route recomputation with keyboard movement, driver presets, six workflow stages and citations, matrix size changes and computed values, vehicle stepping, conveyor inspection counters, virtual file listing, Tab completion, history recall, nested-window pause, actual FPS samples, launcher Ctrl+K, experience navigation, theme/motion changes, motion persistence, replay boot and focus/Shift+Tab. Tested 1440×900 desktop and 390×844 mobile; inspection and 8×8 matrix layouts fit without horizontal overflow. SVG pointer coordinates use the screen transform to account for viewBox letterboxing.
+
+The vision, agent and defect examples use explicitly labeled deterministic synthetic data. Matrix traffic is an assumption-based model, not a GPU speed measurement. FPS telemetry is actual browser scheduling data sampled only while diagnostics are open; no universal frame-rate guarantee is made. Motion-off uses manual stepping. Labs pause when covered; closed labs reset on reopen. These remain educational demonstrators, not production solvers, trained inference services or physical safety systems.
+
+Delivery constraint: branch `main` has no configured Git remote, and GitHub CLI is unavailable. No remote was created or modified and no push was attempted, as required by the existing-repository-only instructions.

@@ -10,6 +10,7 @@ import { PortalRenderer } from "./PortalRenderer";
 type Props = {
   reverse: boolean;
   reduced: boolean;
+  disabled?: boolean;
   host: RefObject<HTMLElement | null>;
   onProgress: (progress: number) => void;
 };
@@ -17,6 +18,7 @@ type Props = {
 export default function CinematicPortalTransition({
   reverse,
   reduced,
+  disabled = false,
   host,
   onProgress,
 }: Props) {
@@ -35,7 +37,7 @@ export default function CinematicPortalTransition({
       context && surface ? new PortalRenderer(surface, context) : null;
     const gentle = reduced || !renderer;
     if (gentle) element.classList.add("portal-fallback");
-    const duration = gentle ? REDUCED_DURATION : PORTAL_DURATION;
+    const duration = disabled ? 1 : gentle ? REDUCED_DURATION : PORTAL_DURATION;
     const from = currentProgress.current;
     let frame = 0,
       start = performance.now(),
@@ -121,7 +123,7 @@ export default function CinematicPortalTransition({
       element.style.removeProperty("--portal-chrome");
       element.style.removeProperty("--portal-recede");
     };
-  }, [reverse, reduced, host]);
+  }, [reverse, reduced, disabled, host]);
   return (
     <canvas
       ref={canvas}

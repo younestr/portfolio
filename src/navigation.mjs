@@ -19,10 +19,31 @@ export function navigationReducer(state, action) {
   // Portal travel is atomic: keyboard, pointer and commands cannot redirect it.
   if (
     ["ENTERING", "LEAVING"].includes(state.scene) &&
-    !["PROGRESS", "PAUSE"].includes(action.type)
+    !["PROGRESS", "PAUSE", "SET_PAUSED"].includes(action.type)
   )
     return state;
   switch (action.type) {
+    case "SET_PAUSED":
+      return state.paused === action.value
+        ? state
+        : { ...state, paused: action.value };
+    case "REVEAL_PROJECT": {
+      const origin = ["COMMAND", "BUFFER"].includes(state.scene)
+        ? state.returnScene
+        : state.scene;
+      const project = Math.max(0, Math.min(action.total - 1, action.index));
+      return {
+        ...state,
+        project,
+        previousProject: state.project,
+        direction: project >= state.project ? 1 : -1,
+        scene: origin === "INTRO" ? "ENTERING" : "EXPLORER",
+        progress: origin === "INTRO" ? 0 : 1,
+        activity: "selecting",
+        query: "",
+        error: "",
+      };
+    }
     case "ENTER":
       if (state.scene === "INTRO")
         return {
